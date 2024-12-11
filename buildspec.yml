@@ -1,0 +1,48 @@
+version: 0.2
+run-as: root
+
+
+phases:
+  pre_build:
+    commands:
+      - sudo apt-get update
+      # Installation of Python3
+      - echo "Installation of Python3"
+      - sudo apt install python3
+      # Installation of NodeJS
+      - echo "Installation of NodeJS"
+      - sudo apt install nodejs -y
+      - node -v
+      - sudo apt install npm -y
+      - npx playwright install-deps
+      - sudo apt install xvfb -y
+
+  build:
+    commands:
+      #Create the Virtual Environment
+      - echo "Creating virtual environment"
+      - python3 -m venv venv
+      - ls -lha
+      #Install Libraries:
+      - echo "Installing Libraries"
+      - pip install -r requirements.txt
+      #Initialize the Browser library
+      - echo "Initializing Browser library"
+      - rfbrowser init
+      #Running the tests
+      - echo "Running tests"
+      - robot -d my_reports --variable HEADLESS_FLAG:True Tests 
+      
+  post_build:
+    commands:
+      #Generate a Metric Report after de execution
+      - ls -lha
+      - echo "Generating Metric Report"
+      - robotmetrics --inputpath ./my_reports/ --output output.xml 
+      #Copy results to S3
+      - echo "Copying results to S3"
+      - aws s3 cp ./my_reports/ $S3_URI/results --recursive
+      - echo "You can see the results in " $S3_URL
+      
+artifacts:
+    files: imagedefinitions.json
